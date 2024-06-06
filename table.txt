@@ -1,0 +1,6 @@
+  <tr>
+    <td><strong>{title}</strong></td>
+    <td><img src="{image}" height=200 width=250></img></td>
+    <td><strong>{bid}</strong></td>
+    <td><strong><a href={url} target="_blank">Link</a></strong></td>
+  </tr>
