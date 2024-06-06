@@ -30,10 +30,12 @@ def read_pages():
             if "More Lots Will Be" in title:
                 running = False
                 break
+            lot = tile.find("span", class_="text-primary")
             new_url = tile.find("a", class_="lot-link").get("href")
             link_url = MAIN_URL + new_url
             image_src = tile.find("img", class_="lot-thumbnail").get("src")
             bid = tile.find("span", class_="d-sm-inline").text
+            sub_data["lot"] = lot
             sub_data["title"] = title
             sub_data["url"] = link_url
             sub_data["image"] = image_src
@@ -51,10 +53,11 @@ def generate_html(data):
     with open('table.txt', 'r') as file:
         table_template = file.read()
     for item in data:
-        row = table_template.format(title=item["title"],
-                              image=item["image"],
-                              bid=item["bid"],
-                              url=item["url"])
+        row = table_template.format(lot=item["lot"],
+                                    title=item["title"],
+                                    image=item["image"],
+                                    bid=item["bid"],
+                                    url=item["url"])
         rows.append(row)
 
     output = html.format(date=dt_string,
