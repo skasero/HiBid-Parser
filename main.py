@@ -1,20 +1,21 @@
+import argparse
 from datetime import datetime
 from bs4 import BeautifulSoup
 from requests_html import HTMLSession
 
 
 MAIN_URL = "https://publicauctionreno.hibid.com"
-URL = "https://publicauctionreno.hibid.com/catalog/553040/public-auction-reno-315-06-09-2024--sunday-"
+URL = "https://publicauctionreno.hibid.com/catalog/554957/public-auction-reno-316-06-16-2024--sunday-"
 PAGE = "?apage="
 
 
-def read_pages():
+def read_pages(url=URL):
     data = []
     running = True
     total_tiles = 0
     count = 1
     while running:
-        page_url = URL + PAGE + str(count)
+        page_url = url + PAGE + str(count)
         count += 1
         session = HTMLSession()
         print(f"Reading: {page_url}")
@@ -72,6 +73,9 @@ def generate_html(data):
         file.write(output)
 
 if __name__ == "__main__":
-    data = read_pages()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-u', '--url', help='URL of Bid Website', type=str)
+    args = parser.parse_args()
+    data = read_pages(args.url)
     print(f"Found {len(data)} items")
     generate_html(data)
