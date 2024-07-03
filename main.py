@@ -53,7 +53,7 @@ def read_pages(url=URL):
 
 def generate_html(data):
     rows = []
-    dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    dt_string = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
     with open('template.html', 'r') as file:
         html = file.read()
     with open('table.txt', 'r') as file:
