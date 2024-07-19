@@ -44,9 +44,12 @@ def read_pages(url=URL):
             data.append(sub_data)
 
         if (len(tiles) == 0):
-            end = soup.find("div", class_="text-center fw-bold mx-auto ng-star-inserted").text
-            if "Please check back soon" in end:
-                break
+            try:
+                end = soup.find("div", class_="text-center fw-bold mx-auto ng-star-inserted").text
+                if "Please check back soon" in end:
+                    break
+            except AttributeError:
+                print("Check if website is down")
 
     return data
 
