@@ -2,6 +2,7 @@ import argparse
 from datetime import datetime
 from bs4 import BeautifulSoup
 from requests_html import HTMLSession
+from requests.exceptions import RequestException
 
 
 MAIN_URL = "https://publicauctionreno.hibid.com"
@@ -14,43 +15,54 @@ def read_pages(url=URL):
     running = True
     total_tiles = 0
     count = 1
+    session = HTMLSession()
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+        'Cache-Control': 'no-cache'
+    }
+
     while running:
         page_url = url + PAGE + str(count)
         count += 1
-        session = HTMLSession()
         print(f"Reading: {page_url}")
-        r = session.get(page_url)
-        r.html.render(sleep=2)
-        content = r.html.html
-        soup = BeautifulSoup(content, "lxml")
-        tiles = soup.find_all("app-lot-tile")
-        total_tiles += len(tiles)
-        for tile in tiles:
-            sub_data = {}
-            title = tile.find("h2", class_="lot-title").text
-            if "More Lots Will Be" in title:
-                running = False
-                break
-            lot = tile.find("span", class_="text-primary")
-            new_url = tile.find("a", class_="lot-link").get("href")
-            link_url = MAIN_URL + new_url
-            image_src = tile.find("img", class_="lot-thumbnail").get("src")
-            bid = tile.find("span", class_="d-sm-inline").text
-            sub_data["lot"] = lot
-            sub_data["title"] = title
-            sub_data["url"] = link_url
-            sub_data["image"] = image_src
-            sub_data["bid"] = bid
-            data.append(sub_data)
-
-        if (len(tiles) == 0):
-            try:
-                end = soup.find("div", class_="text-center fw-bold mx-auto ng-star-inserted").text
-                if "Please check back soon" in end:
+        try:
+            r = session.get(page_url, headers=headers, timeout=10)
+            r.html.render(wait=1, sleep=4)
+            content = r.html.html
+            soup = BeautifulSoup(content, "lxml")
+            tiles = soup.find_all("app-lot-tile")
+            total_tiles += len(tiles)
+            for tile in tiles:
+                sub_data = {}
+                title = tile.find("h2", class_="lot-title").text
+                if "More Lots Will Be" in title:
+                    running = False
                     break
-            except AttributeError:
-                print("Check if website is down")
+                lot = tile.find("span", class_="text-primary")
+                new_url = tile.find("a", class_="lot-link").get("href")
+                link_url = MAIN_URL + new_url
+                image_src = tile.find("img", class_="lot-thumbnail").get("src")
+                bid = tile.find("span", class_="d-sm-inline").text
+                sub_data["lot"] = lot
+                sub_data["title"] = title
+                sub_data["url"] = link_url
+                sub_data["image"] = image_src
+                sub_data["bid"] = bid
+                data.append(sub_data)
 
+            if (len(tiles) == 0):
+                try:
+                    end = soup.find("div", class_="text-center fw-bold mx-auto").text
+                    if "Please check back soon" in end:
+                        break
+                except AttributeError:
+                    print("Check if website is down")
+        except (RequestException, TimeoutError) as e:
+            print(f"Failed to fetch {page_url}: {str(e)}")
+            session.close()
+            exit(1)
+
+    session.close()
     return data
 
 
@@ -74,6 +86,7 @@ def generate_html(data):
 
     with open('final.html', 'w') as file:
         file.write(output)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
