@@ -1,13 +1,27 @@
 import argparse
+import time
 from datetime import datetime
 from bs4 import BeautifulSoup
 from requests_html import HTMLSession
 from requests.exceptions import RequestException
 
 
-MAIN_URL = "https://publicauctionreno.hibid.com"
-URL = "https://publicauctionreno.hibid.com/catalog/554957/public-auction-reno-316-06-16-2024--sunday-"
+MAIN_URL = "https://hibid.com"
+URL = "https://hibid.com/catalog/554957/public-auction-reno-316-06-16-2024--sunday-"
 PAGE = "?apage="
+
+
+def fetch_page_content(session, url, headers=None, max_retries=1):
+    for attempt in range(max_retries):
+        try:
+            r = session.get(url, headers=headers, timeout=10)
+            r.html.render(wait=4, sleep=3, timeout=10)
+            content = r.html.html
+            return content
+        except Exception as e:
+            print(f"Attempt {attempt + 1} failed: {e}")
+            time.sleep(2)  # Wait before retrying
+    return None
 
 
 def read_pages(url=URL):
@@ -26,9 +40,11 @@ def read_pages(url=URL):
         count += 1
         print(f"Reading: {page_url}")
         try:
-            r = session.get(page_url, headers=headers, timeout=10)
-            r.html.render(wait=1, sleep=4)
-            content = r.html.html
+            content = fetch_page_content(session, page_url, headers=headers)
+            if content is None:
+                print(f"Failed to fetch {page_url}")
+                session.close()
+                exit(1)
             soup = BeautifulSoup(content, "lxml")
             tiles = soup.find_all("app-lot-tile")
             total_tiles += len(tiles)
@@ -51,12 +67,14 @@ def read_pages(url=URL):
                 data.append(sub_data)
 
             if (len(tiles) == 0):
+                break
                 try:
-                    end = soup.find("div", class_="text-center fw-bold mx-auto").text
+                    end = soup.find("div", class_="pt-3 mx-auto text-center fw-bold").text
                     if "Please check back soon" in end:
                         break
                 except AttributeError:
                     print("Check if website is down")
+                break
         except (RequestException, TimeoutError) as e:
             print(f"Failed to fetch {page_url}: {str(e)}")
             session.close()
